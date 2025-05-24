@@ -8,6 +8,7 @@ import {
   Animated,
   Dimensions,
   StatusBar,
+  ScrollView,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 
@@ -17,36 +18,23 @@ export default function Index() {
   const [location, setLocation] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const fadeAnim = new Animated.Value(0);
-  const pulseAnim = new Animated.Value(1);
+  const slideAnim = new Animated.Value(50);
 
   useEffect(() => {
-    // Fade in animation on mount
-    Animated.timing(fadeAnim, {
-      toValue: 1,
-      duration: 1000,
-      useNativeDriver: true,
-    }).start();
+    // Fade in and slide up animation on mount
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 800,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 800,
+        useNativeDriver: true,
+      }),
+    ]).start();
   }, []);
-
-  useEffect(() => {
-    if (isLoading) {
-      // Pulsing animation for loading
-      Animated.loop(
-        Animated.sequence([
-          Animated.timing(pulseAnim, {
-            toValue: 1.2,
-            duration: 800,
-            useNativeDriver: true,
-          }),
-          Animated.timing(pulseAnim, {
-            toValue: 1,
-            duration: 800,
-            useNativeDriver: true,
-          }),
-        ])
-      ).start();
-    }
-  }, [isLoading]);
 
   const handleSearch = () => {
     if (location.trim()) {
@@ -59,201 +47,267 @@ export default function Index() {
   };
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="light-content" />
+    <>
+      <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
       <LinearGradient
-        colors={["#FF6B35", "#F7931E", "#FFD23F", "#8B5A96", "#4A148C"]}
+        colors={["#1a1a2e", "#16213e", "#0f3460"]}
         style={styles.gradient}
         start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
+        end={{ x: 0, y: 1 }}
       >
-        <Animated.View
-          style={[styles.content, { opacity: fadeAnim }]}
+        <ScrollView 
+          contentContainerStyle={styles.scrollContainer}
+          showsVerticalScrollIndicator={false}
         >
-          {/* Sun Icon */}
           <Animated.View
             style={[
-              styles.sunContainer,
-              isLoading && { transform: [{ scale: pulseAnim }] },
+              styles.container,
+              {
+                opacity: fadeAnim,
+                transform: [{ translateY: slideAnim }],
+              },
             ]}
           >
-            <View style={styles.sun}>
-              <View style={styles.sunCore} />
-              {[...Array(8)].map((_, i) => (
-                <View
-                  key={i}
-                  style={[
-                    styles.sunRay,
-                    {
-                      transform: [{ rotate: `${i * 45}deg` }],
-                    },
-                  ]}
-                />
-              ))}
+            {/* Header Section */}
+            <View style={styles.header}>
+              <Text style={styles.time}>19:42</Text>
+              <Text style={styles.date}>Today</Text>
+            </View>
+
+            {/* Main Content */}
+            <View style={styles.mainContent}>
+              <View style={styles.sunsetCard}>
+                <LinearGradient
+                  colors={["rgba(255, 107, 53, 0.1)", "rgba(255, 183, 77, 0.05)"]}
+                  style={styles.cardGradient}
+                >
+                  <View style={styles.sunIcon}>
+                    <LinearGradient
+                      colors={["#FFB74D", "#FF8A65"]}
+                      style={styles.sunGradient}
+                    />
+                  </View>
+                  
+                  <Text style={styles.sunsetLabel}>Sunset</Text>
+                  <Text style={styles.sunsetTime}>
+                    {isLoading ? "--:--" : "19:42"}
+                  </Text>
+                  <Text style={styles.sunsetSubtext}>
+                    {isLoading ? "Calculating..." : "Golden hour starts at 18:45"}
+                  </Text>
+                </LinearGradient>
+              </View>
+
+              {/* Location Input */}
+              <View style={styles.inputSection}>
+                <Text style={styles.inputLabel}>Location</Text>
+                <View style={styles.inputWrapper}>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Enter city or coordinates"
+                    placeholderTextColor="rgba(255, 255, 255, 0.4)"
+                    value={location}
+                    onChangeText={setLocation}
+                    editable={!isLoading}
+                  />
+                  <TouchableOpacity
+                    style={[
+                      styles.searchButton,
+                      (!location.trim() || isLoading) && styles.searchButtonDisabled,
+                    ]}
+                    onPress={handleSearch}
+                    disabled={isLoading || !location.trim()}
+                  >
+                    {isLoading ? (
+                      <Animated.View style={styles.loadingSpinner} />
+                    ) : (
+                      <Text style={styles.searchButtonText}>→</Text>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              {/* Additional Info Cards */}
+              <View style={styles.infoCards}>
+                <View style={styles.infoCard}>
+                  <Text style={styles.infoLabel}>Sunrise</Text>
+                  <Text style={styles.infoValue}>06:24</Text>
+                </View>
+                <View style={styles.infoCard}>
+                  <Text style={styles.infoLabel}>Day Length</Text>
+                  <Text style={styles.infoValue}>13h 18m</Text>
+                </View>
+              </View>
+
+              <View style={styles.infoCards}>
+                <View style={styles.infoCard}>
+                  <Text style={styles.infoLabel}>Blue Hour</Text>
+                  <Text style={styles.infoValue}>20:15</Text>
+                </View>
+                <View style={styles.infoCard}>
+                  <Text style={styles.infoLabel}>Twilight</Text>
+                  <Text style={styles.infoValue}>20:45</Text>
+                </View>
+              </View>
             </View>
           </Animated.View>
-
-          {/* Title */}
-          <Text style={styles.title}>Sunset Predictor</Text>
-          <Text style={styles.subtitle}>
-            Discover magical sunset times anywhere
-          </Text>
-
-          {/* Input Section */}
-          <View style={styles.inputContainer}>
-            <TextInput
-              style={styles.input}
-              placeholder="Enter location (e.g., New York, NY)"
-              placeholderTextColor="#FFB74D"
-              value={location}
-              onChangeText={setLocation}
-              editable={!isLoading}
-            />
-            
-            <TouchableOpacity
-              style={[
-                styles.searchButton,
-                isLoading && styles.searchButtonDisabled,
-              ]}
-              onPress={handleSearch}
-              disabled={isLoading || !location.trim()}
-            >
-              {isLoading ? (
-                <Animated.View
-                  style={[
-                    styles.loadingDot,
-                    { transform: [{ scale: pulseAnim }] },
-                  ]}
-                />
-              ) : (
-                <Text style={styles.searchButtonText}>Find Sunset</Text>
-              )}
-            </TouchableOpacity>
-          </View>
-
-          {/* Loading Text */}
-          {isLoading && (
-            <Animated.Text
-              style={[
-                styles.loadingText,
-                { opacity: pulseAnim },
-              ]}
-            >
-              Searching for the perfect sunset...
-            </Animated.Text>
-          )}
-        </Animated.View>
+        </ScrollView>
       </LinearGradient>
-    </View>
+    </>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
   gradient: {
     flex: 1,
     width: width,
     height: height,
   },
-  content: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: 30,
+  scrollContainer: {
+    flexGrow: 1,
+    paddingTop: StatusBar.currentHeight || 44,
   },
-  sunContainer: {
+  container: {
+    flex: 1,
+    paddingHorizontal: 24,
+    paddingTop: 20,
+  },
+  header: {
+    alignItems: "center",
     marginBottom: 40,
   },
-  sun: {
-    width: 120,
-    height: 120,
-    justifyContent: "center",
-    alignItems: "center",
-    position: "relative",
-  },
-  sunCore: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: "#FFE082",
-    shadowColor: "#FF8F00",
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.8,
-    shadowRadius: 20,
-    elevation: 10,
-  },
-  sunRay: {
-    position: "absolute",
-    width: 4,
-    height: 25,
-    backgroundColor: "#FFE082",
-    borderRadius: 2,
-    top: 10,
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: "bold",
+  time: {
+    fontSize: 48,
+    fontWeight: "200",
     color: "#FFFFFF",
-    textAlign: "center",
-    marginBottom: 10,
-    textShadowColor: "rgba(0, 0, 0, 0.3)",
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 3,
+    letterSpacing: -1,
   },
-  subtitle: {
+  date: {
     fontSize: 16,
-    color: "#FFE0B2",
-    textAlign: "center",
-    marginBottom: 50,
-    fontStyle: "italic",
+    color: "rgba(255, 255, 255, 0.6)",
+    marginTop: 4,
+    fontWeight: "400",
   },
-  inputContainer: {
-    width: "100%",
+  mainContent: {
+    flex: 1,
+  },
+  sunsetCard: {
+    marginBottom: 32,
+  },
+  cardGradient: {
+    borderRadius: 20,
+    padding: 24,
     alignItems: "center",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.1)",
+  },
+  sunIcon: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    marginBottom: 16,
+    overflow: "hidden",
+  },
+  sunGradient: {
+    flex: 1,
+    borderRadius: 30,
+  },
+  sunsetLabel: {
+    fontSize: 14,
+    color: "rgba(255, 255, 255, 0.6)",
+    marginBottom: 4,
+    fontWeight: "500",
+    textTransform: "uppercase",
+    letterSpacing: 1,
+  },
+  sunsetTime: {
+    fontSize: 36,
+    fontWeight: "200",
+    color: "#FFFFFF",
+    marginBottom: 8,
+    letterSpacing: -1,
+  },
+  sunsetSubtext: {
+    fontSize: 14,
+    color: "rgba(255, 255, 255, 0.5)",
+    fontWeight: "400",
+  },
+  inputSection: {
+    marginBottom: 32,
+  },
+  inputLabel: {
+    fontSize: 14,
+    color: "rgba(255, 255, 255, 0.6)",
+    marginBottom: 12,
+    fontWeight: "500",
+    textTransform: "uppercase",
+    letterSpacing: 1,
+  },
+  inputWrapper: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(255, 255, 255, 0.05)",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.1)",
   },
   input: {
-    width: "100%",
-    height: 55,
-    backgroundColor: "rgba(255, 255, 255, 0.2)",
-    borderRadius: 25,
-    paddingHorizontal: 20,
+    flex: 1,
+    height: 50,
+    paddingHorizontal: 16,
     fontSize: 16,
     color: "#FFFFFF",
-    marginBottom: 20,
-    borderWidth: 2,
-    borderColor: "rgba(255, 255, 255, 0.3)",
+    fontWeight: "400",
   },
   searchButton: {
-    backgroundColor: "rgba(255, 255, 255, 0.25)",
-    paddingVertical: 15,
-    paddingHorizontal: 40,
-    borderRadius: 25,
-    borderWidth: 2,
-    borderColor: "rgba(255, 255, 255, 0.4)",
-    minWidth: 150,
+    width: 50,
+    height: 50,
+    justifyContent: "center",
     alignItems: "center",
+    backgroundColor: "rgba(255, 255, 255, 0.1)",
+    borderTopRightRadius: 12,
+    borderBottomRightRadius: 12,
   },
   searchButtonDisabled: {
-    opacity: 0.7,
+    opacity: 0.3,
   },
   searchButtonText: {
+    fontSize: 20,
     color: "#FFFFFF",
-    fontSize: 16,
-    fontWeight: "600",
+    fontWeight: "300",
   },
-  loadingDot: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: "#FFFFFF",
+  loadingSpinner: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: "rgba(255, 255, 255, 0.3)",
   },
-  loadingText: {
-    color: "#FFE0B2",
-    fontSize: 14,
-    marginTop: 20,
-    textAlign: "center",
-    fontStyle: "italic",
+  infoCards: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 16,
+  },
+  infoCard: {
+    flex: 1,
+    backgroundColor: "rgba(255, 255, 255, 0.03)",
+    borderRadius: 12,
+    padding: 16,
+    marginHorizontal: 4,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.05)",
+  },
+  infoLabel: {
+    fontSize: 12,
+    color: "rgba(255, 255, 255, 0.5)",
+    marginBottom: 8,
+    fontWeight: "500",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+  infoValue: {
+    fontSize: 18,
+    color: "#FFFFFF",
+    fontWeight: "300",
+    letterSpacing: -0.5,
   },
 });
